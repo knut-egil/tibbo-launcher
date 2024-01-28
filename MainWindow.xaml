@@ -17,7 +17,7 @@
     <Grid Margin="8">
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
-            <RowDefinition Height="24"/>
+            <RowDefinition Height="18"/>
         </Grid.RowDefinitions>
         <Grid Grid.Row="0" Margin="0,0,0,0">
             <Grid.ColumnDefinitions>
@@ -38,12 +38,12 @@
                 <RichTextBox x:Name="rtxtChangelog" Background="{x:Null}" Foreground="Gold" Grid.Row="1" BorderBrush="{x:Null}">
                     <FlowDocument>
                         <Paragraph>
-                            <Run Text="Changelog..."/>
+                            <Run Text="{Binding Path=Changelog, UpdateSourceTrigger=PropertyChanged, FallbackValue='Changelog...'}"/>
                         </Paragraph>
                     </FlowDocument>
                 </RichTextBox>
 
-                <Label x:Name="lblVersion" Content="v1.0.0" HorizontalAlignment="Left" Foreground="Gold" VerticalAlignment="Center" FontSize="12" FontWeight="Bold" Grid.Row="2">
+                <Label x:Name="lblVersion" Content="{Binding Path=VersionText, UpdateSourceTrigger=PropertyChanged, FallbackValue='v1.0.0'}"  HorizontalAlignment="Left" Foreground="Gold" VerticalAlignment="Center" FontSize="12" FontWeight="Bold" Grid.Row="2">
                     <Label.Effect>
                         <DropShadowEffect Direction="235" BlurRadius="4" ShadowDepth="1" Color="#FF000000"/>
                     </Label.Effect>
@@ -59,7 +59,8 @@
         </Grid>
         <Grid Grid.Row="1">
             <ProgressBar x:Name="progDownload" Value="{Binding Path=DownloadProgress, UpdateSourceTrigger=PropertyChanged}"/>
-            <Label x:Name="lblStatus" Content="{Binding Path=StatusText, UpdateSourceTrigger=PropertyChanged}" HorizontalAlignment="Left" Foreground="White" FontSize="10">
+            <Label x:Name="lblStatus" Content="{Binding Path=StatusText, UpdateSourceTrigger=PropertyChanged, FallbackValue='Downloading...'}" 
+                   HorizontalAlignment="Left" Foreground="White" Padding="5,0,5,2" VerticalContentAlignment="Center" FontSize="11">
                 <Label.Effect>
                     <DropShadowEffect Direction="235" BlurRadius="4" ShadowDepth="1" Color="#FF808080"/>
                 </Label.Effect>
