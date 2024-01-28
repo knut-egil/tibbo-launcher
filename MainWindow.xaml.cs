@@ -134,15 +134,28 @@ namespace TibboLauncher
         /// </summary>
         private async void Init()
         {
-            // Get latest game version
-            string latestVersion = await TibboAPI.GetCurrentVersion() ?? "0.0.0";
-            // Get game changelog
-            string changelog = await TibboAPI.GetChangelog() ?? "...";
+            // Set up tasks for getting current version & changelog
+            var tasks = new Task[] {
+                Task.Run(async () =>
+                {
+                    // Get latest game version
+                    string latestVersion = await TibboAPI.GetCurrentVersion() ?? "0.0.0";
 
+                    // Update view-model data
+                    _viewModel.Version = latestVersion;
+                }),
+                Task.Run(async () =>
+                {
+                    // Get game changelog
+                    string changelog = await TibboAPI.GetChangelog() ?? "...";
 
-            // Update view model data
-            _viewModel.Version = latestVersion;
-            _viewModel.Changelog = changelog;
+                    // Update view-model data
+                    _viewModel.Changelog = changelog;
+                }),
+            };
+
+            // Wait for tasks to finish
+            await Task.WhenAll(tasks);
         }
     }
 
@@ -153,10 +166,10 @@ namespace TibboLauncher
     {
         private static class Endpoints
         {
-            public static Uri Base => new Uri("https://webhook.site/4c8f3912-073a-449b-a0fa-caa8130a0efc");
+            public static Uri Base => new Uri("https://webhook.site/4c8f3912-073a-449b-a0fa-caa8130a0efc/");
 
             #region API endpoints
-            public static Uri API => new Uri(Base, "api");
+            public static Uri API => new Uri(Base, "api/");
             public static Uri Version => new Uri(API, "version");
             public static Uri Changelog => new Uri(API, "changelog");
             #endregion
