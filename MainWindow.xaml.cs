@@ -134,6 +134,10 @@ namespace TibboLauncher
         /// </summary>
         private async void Init()
         {
+            // Get installed version
+            string installedVersion = await GetInstalledVersion() ?? "";
+            Debug.WriteLine($"Currently installed version: {installedVersion}");
+
             // Set up tasks for getting current version & changelog
             var tasks = new Task[] {
                 Task.Run(async () =>
@@ -156,6 +160,33 @@ namespace TibboLauncher
 
             // Wait for tasks to finish
             await Task.WhenAll(tasks);
+        }
+    
+        /// <summary>
+        /// Get currently installed version string
+        /// </summary>
+        /// <returns>Installed client version</returns>
+        private async Task<string?> GetInstalledVersion()
+        {
+            // Check for "version" file
+            if (!File.Exists("version"))
+                return null; // No version file, return null
+
+            try
+            {
+                // Read version from file
+                string version = (await File.ReadAllTextAsync("version"))
+                    .Trim();
+
+                // Return version
+                return version;
+            }
+            catch(Exception ex)
+            {
+                Debug.WriteLine($"Encountered an error while checking the installed Tibbo version. Error: {ex}");
+            }
+
+            return null;
         }
     }
 
