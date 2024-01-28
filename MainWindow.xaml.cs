@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Compression;
+using System.IO.Pipes;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -138,12 +140,15 @@ namespace TibboLauncher
             string installedVersion = await GetInstalledVersion() ?? "";
             Debug.WriteLine($"Currently installed version: {installedVersion}");
 
+            string latestVersion = "0.0.0";
+            string changelog = "...";
+
             // Set up tasks for getting current version & changelog
             var tasks = new Task[] {
                 Task.Run(async () =>
                 {
                     // Get latest game version
-                    string latestVersion = await TibboAPI.GetCurrentVersion() ?? "0.0.0";
+                    latestVersion = await TibboAPI.GetCurrentVersion() ?? "0.0.0";
 
                     // Update view-model data
                     _viewModel.Version = latestVersion;
@@ -151,15 +156,31 @@ namespace TibboLauncher
                 Task.Run(async () =>
                 {
                     // Get game changelog
-                    string changelog = await TibboAPI.GetChangelog() ?? "...";
+                    changelog = await TibboAPI.GetChangelog() ?? "...";
 
                     // Update view-model data
                     _viewModel.Changelog = changelog;
                 }),
             };
-
             // Wait for tasks to finish
             await Task.WhenAll(tasks);
+
+            // Check if installedVersion is different from latestVersion
+            // if true, download and install new files
+            if (installedVersion != latestVersion)
+            {
+                // Download and install latest game binaries
+                if(!await Launcher.DownloadAndInstall(updateVersionFile: true))
+                {
+                    // Failed!
+                    Debug.WriteLine($"Failed installing latest game binaries!!");
+                }
+                else
+                {
+                    // Success
+                    Debug.WriteLine($"Successfully installed latest game binaries!");
+                }
+            }
         }
     
         /// <summary>
@@ -187,6 +208,90 @@ namespace TibboLauncher
             }
 
             return null;
+        }
+    }
+
+    /// <summary>
+    /// Tibbo Launcher utilities
+    /// </summary>
+    public static class Launcher
+    {
+        /// <summary>
+        /// Download and install game binaries
+        /// </summary>
+        public static async Task<bool> DownloadAndInstall(bool updateVersionFile = true)
+        {
+            try
+            {
+                // Temp file name
+                string filename = "tibbo-tmp.zip";
+
+                // Open file handle
+                int offset = 0;
+                using (var filestream = File.Open(filename, FileMode.Create, FileAccess.ReadWrite))
+                {
+                    // Get download stream
+                    using (var downloadStream =  await TibboAPI.GetDownloadStream()) 
+                    {
+                        // Return if downloadStream is null
+                        if (downloadStream == null)
+                            return false; // Failed
+
+                        // Write to filestream until download stream is empty
+                        const int CHUNK_SIZE = 2048;
+                        byte[] chunk = new byte[CHUNK_SIZE];
+                        do
+                        {
+                            // Read from download stream
+                            int numRead = await downloadStream.ReadAsync(chunk, 0, chunk.Length);
+                            // Break if numRead is zero
+                            if (numRead == 0)
+                                break; // End of stream
+
+                            // Write numRead to filestream
+                            await filestream.WriteAsync(chunk, offset, numRead);
+
+                            // Update offset
+                            offset += numRead;
+                        }
+                        while (true);
+                    }
+                }
+
+                // Finished downloading game zip binaries
+                // Extract to directory, overwrite existing
+                ZipFile.ExtractToDirectory(filename, ".", true);
+
+                // Delete temp file
+                File.Delete(filename);
+
+                // Update version file!
+                if (updateVersionFile)
+                {
+                    // Version file
+                    string versionFilename = "version";
+
+                    // Get latest version
+                    string? latestVersion = await TibboAPI.GetCurrentVersion();
+
+                    // Should we fail the update if we can't get the version...?
+                    if (latestVersion == null)
+                        return false;
+
+                    // Write to "version" file!
+                    File.WriteAllText(versionFilename, latestVersion.Trim());
+                }
+
+                // Successfully downloaded and installed
+                return true;
+            }
+            catch(Exception ex)
+            {
+                Debug.WriteLine($"Encountered an error while downloading Tibbo game binaries. Error: {ex}");
+            }
+
+            // Download and install failed
+            return false;
         }
     }
 
