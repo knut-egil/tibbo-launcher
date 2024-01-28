@@ -220,6 +220,7 @@ namespace TibboLauncher
     /// </summary>
     public static class Launcher
     {
+        // TODO: Add progress reporting so that we can update UI progressbar...
         /// <summary>
         /// Download and install game binaries
         /// </summary>
