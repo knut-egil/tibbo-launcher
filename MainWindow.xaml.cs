@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -122,6 +123,25 @@ namespace TibboLauncher
         {
             DataContext = _viewModel;
             InitializeComponent();
+
+            // Call init
+            Init();
+        }
+
+        /// <summary>
+        /// Initialize launcher
+        /// </summary>
+        private async void Init()
+        {
+            // Get latest game version
+            string latestVersion = await TibboAPI.GetCurrentVersion() ?? "0.0.0";
+            // Get game changelog
+            string changelog = await TibboAPI.GetChangelog() ?? "...";
+
+
+            // Update view model data
+            _viewModel.Version = latestVersion;
+            _viewModel.Changelog = changelog;
         }
     }
 
@@ -133,7 +153,8 @@ namespace TibboLauncher
         private static class APIEndpoints
         {
             public static Uri Base => new Uri("https://webhook.site/4c8f3912-073a-449b-a0fa-caa8130a0efc/api");
-            public static Uri Version => new Uri(Base, "/version");
+            public static Uri Version => new Uri(Base, "version");
+            public static Uri Changelog => new Uri(Base, "changelog");
         }
 
         /// <summary>
@@ -154,9 +175,36 @@ namespace TibboLauncher
                     return result;
                 }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
-                Console.WriteLine($"Encountered an error while requesting the latest Tibbo game version. Error: {ex}");
+                Debug.WriteLine($"Encountered an error while requesting the latest Tibbo game version. Error: {ex}");
+            }
+
+            // Return null by default
+            return null;
+        }
+
+        /// <summary>
+        /// Get the version changelog
+        /// </summary>
+        /// <returns>Version changelog</returns>
+        public static async Task<string?> GetChangelog()
+        {
+            try
+            {
+                // Make request to Tibbo changelog endpoint
+                using (var client = new HttpClient())
+                {
+                    // Get result
+                    string result = await client.GetStringAsync(APIEndpoints.Changelog);
+
+                    // Return
+                    return result;
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Encountered an error while requesting the Tibbo changelog. Error: {ex}");
             }
 
             // Return null by default
