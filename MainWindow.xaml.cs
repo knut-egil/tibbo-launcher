@@ -333,7 +333,7 @@ namespace TibboLauncher
                 using (var client = new HttpClient())
                 {
                     // Get result
-                    string result = await client.GetStringAsync(Endpoints.Version);
+                    string result = (await client.GetStringAsync(Endpoints.Version)).Trim();
 
                     // Return
                     return result;
