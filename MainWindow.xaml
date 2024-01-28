@@ -35,7 +35,7 @@
                         <DropShadowEffect Direction="235" BlurRadius="4" ShadowDepth="1" Color="#FF000000"/>
                     </Label.Effect>
                 </Label>
-                <RichTextBox x:Name="rtxtChangelog" Background="{x:Null}" Foreground="Gold" Grid.Row="1" BorderBrush="{x:Null}">
+                <RichTextBox x:Name="rtxtChangelog" Background="{x:Null}" Foreground="Gold" Grid.Row="1" BorderBrush="{x:Null}" FontSize="11" HorizontalScrollBarVisibility="Auto">
                     <FlowDocument>
                         <Paragraph>
                             <Run Text="{Binding Path=Changelog, UpdateSourceTrigger=PropertyChanged, FallbackValue='Changelog...'}"/>

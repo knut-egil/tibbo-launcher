@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.IO.Compression;
 using System.IO.Pipes;
@@ -9,6 +10,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Runtime.CompilerServices;
+using System.Security.Policy;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -49,7 +51,7 @@ namespace TibboLauncher
         {
             get
             {
-                return $"Downloading... ({DownloadProgress}%)";
+                return $"Downloading... ({DownloadProgress.ToString("0.0", CultureInfo.GetCultureInfo("en-GB"))}%)";
             }
         }
         #endregion
@@ -121,10 +123,10 @@ namespace TibboLauncher
     /// </summary>
     public partial class MainWindow : Window
     {
-        private LauncherViewModel _viewModel = new LauncherViewModel();
+        public static LauncherViewModel ViewModel = new LauncherViewModel();
         public MainWindow()
         {
-            DataContext = _viewModel;
+            DataContext = ViewModel;
             InitializeComponent();
 
             // Call init
@@ -151,7 +153,7 @@ namespace TibboLauncher
                     latestVersion = await TibboAPI.GetCurrentVersion() ?? "0.0.0";
 
                     // Update view-model data
-                    _viewModel.Version = latestVersion;
+                    ViewModel.Version = latestVersion;
                 }),
                 Task.Run(async () =>
                 {
@@ -159,7 +161,7 @@ namespace TibboLauncher
                     changelog = await TibboAPI.GetChangelog() ?? "...";
 
                     // Update view-model data
-                    _viewModel.Changelog = changelog;
+                    ViewModel.Changelog = changelog;
                 }),
             };
             // Wait for tasks to finish
@@ -239,8 +241,14 @@ namespace TibboLauncher
                 using (var filestream = File.Open(filename, FileMode.Create, FileAccess.ReadWrite))
                 {
                     // Get download stream
-                    using (var downloadStream =  await TibboAPI.GetDownloadStream()) 
+                    (long?, Stream)? result = await TibboAPI.GetDownloadStream();
+
+                    // Get content size
+                    long contentSize = result.Value.Item1 ?? 1024*1024*256; // Claim size is 256 MB if not set
+
+                    using (var downloadStream = result.Value.Item2)
                     {
+
                         // Return if downloadStream is null
                         if (downloadStream == null)
                             return false; // Failed
@@ -258,6 +266,9 @@ namespace TibboLauncher
 
                             // Write numRead to filestream
                             await filestream.WriteAsync(chunk, 0, numRead);
+
+                            // Update progress bar!
+                            MainWindow.ViewModel.DownloadProgress = ((float)filestream.Length / contentSize) *100f;
                         }
                         while (true);
                     }
@@ -310,7 +321,7 @@ namespace TibboLauncher
             public static Uri Base => new Uri("https://raw.githubusercontent.com/knut-egil/tibbo-client/main/");
 
             #region API endpoints
-            public static Uri API => new Uri(Base,"api/");
+            public static Uri API => new Uri(Base, "api/");
             public static Uri Version => new Uri(API, "version");
             public static Uri Changelog => new Uri(API, "changelog");
             #endregion
@@ -381,18 +392,23 @@ namespace TibboLauncher
         /// Get stream to download latest game binaries
         /// </summary>
         /// <returns>Game binaries stream</returns>
-        public static async Task<Stream?> GetDownloadStream()
+        public static async Task<(long?, Stream)?> GetDownloadStream()
         {
             try
             {
                 // Make request to Tibbo changelog endpoint
                 using (var client = new HttpClient())
                 {
-                    // Get result
-                    var result = await client.GetStreamAsync(Endpoints.Download);
+                    // Get metadata result
+                    var headResponse = await client.SendAsync(new HttpRequestMessage(HttpMethod.Head, Endpoints.Download));
+                    // Extract content-length
+                    long? contentLength = headResponse?.Content.Headers.ContentLength;
+
+                    // Get metadata result
+                    var downloadStream = await client.GetStreamAsync(Endpoints.Download);
 
                     // Return
-                    return result;
+                    return (contentLength, downloadStream);
                 }
             }
             catch (Exception ex)
