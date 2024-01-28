@@ -179,6 +179,10 @@ namespace TibboLauncher
                 {
                     // Success
                     Debug.WriteLine($"Successfully installed latest game binaries!");
+
+                    // Get installed version after update
+                    installedVersion = await GetInstalledVersion() ?? "";
+                    Debug.WriteLine($"Update succesful! currently installed version: {installedVersion}");
                 }
             }
         }
