@@ -185,6 +185,10 @@ namespace TibboLauncher
                     Debug.WriteLine($"Update succesful! currently installed version: {installedVersion}");
                 }
             }
+
+            // Launch game!
+            Process.Start("Intersect Client");
+            Application.Current.Shutdown();
         }
     
         /// <summary>
@@ -232,7 +236,6 @@ namespace TibboLauncher
                 string filename = "tibbo-tmp.zip";
 
                 // Open file handle
-                int offset = 0;
                 using (var filestream = File.Open(filename, FileMode.Create, FileAccess.ReadWrite))
                 {
                     // Get download stream
@@ -243,21 +246,18 @@ namespace TibboLauncher
                             return false; // Failed
 
                         // Write to filestream until download stream is empty
-                        const int CHUNK_SIZE = 2048;
+                        const int CHUNK_SIZE = 1024*1024*8; // 8MB at a time
                         byte[] chunk = new byte[CHUNK_SIZE];
                         do
                         {
                             // Read from download stream
-                            int numRead = await downloadStream.ReadAsync(chunk, 0, chunk.Length);
+                            int numRead = await downloadStream.ReadAsync(chunk, 0, CHUNK_SIZE);
                             // Break if numRead is zero
                             if (numRead == 0)
                                 break; // End of stream
 
                             // Write numRead to filestream
-                            await filestream.WriteAsync(chunk, offset, numRead);
-
-                            // Update offset
-                            offset += numRead;
+                            await filestream.WriteAsync(chunk, 0, numRead);
                         }
                         while (true);
                     }
@@ -307,16 +307,16 @@ namespace TibboLauncher
     {
         private static class Endpoints
         {
-            public static Uri Base => new Uri("https://webhook.site/4c8f3912-073a-449b-a0fa-caa8130a0efc/");
+            public static Uri Base => new Uri("https://raw.githubusercontent.com/knut-egil/tibbo-client/main/");
 
             #region API endpoints
-            public static Uri API => new Uri(Base, "api/");
+            public static Uri API => new Uri(Base,"api/");
             public static Uri Version => new Uri(API, "version");
             public static Uri Changelog => new Uri(API, "changelog");
             #endregion
 
             #region CDN 
-            public static Uri Download => new Uri(Base, "download");
+            public static Uri Download => new Uri("https://drive.usercontent.google.com/download?id=1dvBH1b-w87WthFHBjU2UZy0F356dm6MM&export=download&authuser=3&confirm=t&uuid=303f65ab-70ac-4681-aa56-9d1a4af66f4a&at=APZUnTVDfmFAmu7M5HKqE3URdQbj%3A1706467232895");
             #endregion
         }
 
@@ -389,7 +389,7 @@ namespace TibboLauncher
                 using (var client = new HttpClient())
                 {
                     // Get result
-                    var result = await client.GetStreamAsync(Endpoints.Changelog);
+                    var result = await client.GetStreamAsync(Endpoints.Download);
 
                     // Return
                     return result;
