@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -150,13 +151,22 @@ namespace TibboLauncher
     /// </summary>
     public static class TibboAPI
     {
-        private static class APIEndpoints
+        private static class Endpoints
         {
-            public static Uri Base => new Uri("https://webhook.site/4c8f3912-073a-449b-a0fa-caa8130a0efc/api");
-            public static Uri Version => new Uri(Base, "version");
-            public static Uri Changelog => new Uri(Base, "changelog");
+            public static Uri Base => new Uri("https://webhook.site/4c8f3912-073a-449b-a0fa-caa8130a0efc");
+
+            #region API endpoints
+            public static Uri API => new Uri(Base, "api");
+            public static Uri Version => new Uri(API, "version");
+            public static Uri Changelog => new Uri(API, "changelog");
+            #endregion
+
+            #region CDN 
+            public static Uri Download => new Uri(Base, "download");
+            #endregion
         }
 
+        #region API
         /// <summary>
         /// Get the latest game-client version
         /// </summary>
@@ -169,7 +179,7 @@ namespace TibboLauncher
                 using (var client = new HttpClient())
                 {
                     // Get result
-                    string result = await client.GetStringAsync(APIEndpoints.Version);
+                    string result = await client.GetStringAsync(Endpoints.Version);
 
                     // Return
                     return result;
@@ -196,7 +206,7 @@ namespace TibboLauncher
                 using (var client = new HttpClient())
                 {
                     // Get result
-                    string result = await client.GetStringAsync(APIEndpoints.Changelog);
+                    string result = await client.GetStringAsync(Endpoints.Changelog);
 
                     // Return
                     return result;
@@ -210,5 +220,35 @@ namespace TibboLauncher
             // Return null by default
             return null;
         }
+        #endregion
+
+        #region CDN
+        /// <summary>
+        /// Get stream to download latest game binaries
+        /// </summary>
+        /// <returns>Game binaries stream</returns>
+        public static async Task<Stream?> GetDownloadStream()
+        {
+            try
+            {
+                // Make request to Tibbo changelog endpoint
+                using (var client = new HttpClient())
+                {
+                    // Get result
+                    var result = await client.GetStreamAsync(Endpoints.Changelog);
+
+                    // Return
+                    return result;
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Encountered an error while requesting the Tibbo game binaries. Error: {ex}");
+            }
+
+            // Return null by default
+            return null;
+        }
+        #endregion
     }
 }
