@@ -7,7 +7,7 @@
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:LauncherViewModel}" 
         Title="Tibbo Launcher"
-        Height="256" Width="384" ResizeMode="CanMinimize" RenderTransformOrigin="0.5,0.5" Icon="/resources/Tibbo_x512.png">
+        Height="256" Width="384" ResizeMode="CanMinimize" RenderTransformOrigin="0.5,0.5" Icon="/Tibbo_x512.ico">
     <Window.Background>
         <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
             <GradientStop Color="Black" Offset="1"/>
